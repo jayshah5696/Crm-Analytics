@@ -141,7 +141,7 @@ df_yhat_test <- as.data.frame(pr)
 
 table(df_yhat_test[,1],churn_valid[,1])
 (1072+2196)/5000
-
+roc_auc(df_yhat_test[,3],churn_valid[,1])
 
 
 

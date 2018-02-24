@@ -1,62 +1,70 @@
+# improved list of objects
+.ls.objects <- function (pos = 1, pattern, order.by,
+                         decreasing=FALSE, head=FALSE, n=5) {
+  napply <- function(names, fn) sapply(names, function(x)
+    fn(get(x, pos = pos)))
+  names <- ls(pos = pos, pattern = pattern)
+  obj.class <- napply(names, function(x) as.character(class(x))[1])
+  obj.mode <- napply(names, mode)
+  obj.type <- ifelse(is.na(obj.class), obj.mode, obj.class)
+  obj.prettysize <- napply(names, function(x) {
+    capture.output(format(utils::object.size(x), units = "auto")) })
+  obj.size <- napply(names, object.size)
+  obj.dim <- t(napply(names, function(x)
+    as.numeric(dim(x))[1:2]))
+  vec <- is.na(obj.dim)[, 1] & (obj.type != "function")
+  obj.dim[vec, 1] <- napply(names, length)[vec]
+  out <- data.frame(obj.type, obj.size, obj.prettysize, obj.dim)
+  names(out) <- c("Type", "Size", "PrettySize", "Rows", "Columns")
+  if (!missing(order.by))
+    out <- out[order(out[[order.by]], decreasing=decreasing), ]
+  if (head)
+    out <- head(out, n)
+  out
+}
 
-#import dataset with r studio inbuilt function
+# shorthand
+lsos <- function(..., n=10) {
+  .ls.objects(..., order.by="Size", decreasing=TRUE, head=TRUE, n=n)
+}
 
-churn_train=churn_train[,-1]
-churn_valid=churn_valid[,-1]
-
-
-
-datx = colnames(churn_train[2:59])
-daty = colnames(churn_train[1])
-trh=as.h2o(churn_train,destination_frame = "trh")
-tth=as.h2o(churn_valid,destination_frame="tth")
-
-#training
-model <- 
-  h2o.deeplearning(x = datx,  # column numbers for predictors
-                   y = daty,   # column number for label
-                   training_frame = "trh",# data in H2O format
-                   activation = "TanhWithDropout", # or 'Tanh'
-                   input_dropout_ratio = .1, # % of inputs dropout
-                   hidden_dropout_ratios = c(.2,.2), # % for nodes dropout
-                   balance_classes = TRUE, 
-                   hidden = c(20,20), # three layers of 50 nodes
-                   epochs = 100, # max. no. of epochs
-                   variable_importances=T,
-                   stopping_rounds=2,
-                   stopping_metric="misclassification", ## could be "MSE","logloss","r2"
-                   stopping_tolerance=0.001,nfolds = 5,seed = 1,fold_assignment = 'Modulo',
-                   validation_frame = 'tth')
-
-
-#prediction
-
-pr =h2o.predict(model,tth)
-df_yhat_test <- as.data.frame(pr)
-
-table(df_yhat_test[,1],churn_valid[,1])
-(1852+1110)/5000
-
-
-
-roc_auc(df_yhat_test[,3],churn_valid[,1])
-
-
-
-model=h2o.randomForest(x=datx,y=daty,training_frame="trh",ntrees = 50,max_depth = 10,mtries = 15)
-
-model=h2o.gbm(x=datx,y=daty,training_frame="trh",nfolds=5,ntrees=1000,max_depth=3,,seed=1,learn_rate=.2)
-model=h2o.xgboost()
-
-
-1328+1460
-2788/5000
-97/1425
+lsos()
 
 
 
 
-with.y_train$appetency=mapvalues(with.y_train$appetency,c('yes','no'),to=c('1','0'))
-with.y_valid$appetency=mapvalues(with.y_valid$appetency,c('yes','no'),to=c('1','0'))
-with.y_train$churn=mapvalues(with.y_train$churn,c('yes','no'),to=c('1','0'))
-with.y_valid$churn=mapvalues(with.y_valid$churn,c('yes','no'),to=c('1','0'))
+df=mice(train_60, imputationMethod   = c("norm","logreg","polyreg","pmm","mean","logreg2","lda","sample"))
+
+df=mice(train_60, imputationMethod   = c("norm","logreg","polyreg","pmm","mean","logreg2","lda","sample"))
+
+df=mice(train_60,method ="norm",maxit=1,seed=1 )
+gc()
+#install.packages("HotDeckImputation")
+library(HotDeckImputation)
+x2=data.matrix(X, rownames.force = NA)
+x1=impute.CPS_SEQ_HD(DATA = x2,covariates = NULL)
+x2=impute.NN_HD(DATA = X, distance = "man", weights = "range", attributes = "sim",
+                comp = "rseq", donor_limit = Inf, optimal_donor = "no",
+                list_donors_recipients = NULL, diagnose = NULL)
+warnings()
+?impute.mean
+input_feature_names_train = names(train_60)
+
+x3=impute.mean(X[,num,with=F])
+z=as.numeric(X)
+num<- sapply(X,is.numeric)
+input_feature_classes <- factor(sapply(train_60, class))
+numeric_input_feature_names <-  input_feature_names_train[input_feature_classes != 'factor']
+numeric_input_feature_names
+
+numeric_input_feature_standard_deviations <-
+  sapply(train_60[ , numeric_input_feature_names, with=FALSE],
+         function(col) sd(col, na.rm=TRUE))
+numeric_input_feature_standard_deviations
+
+z=train_60[ , numeric_input_feature_names, with=FALSE]
+tr=mice(z)
+library(DMwR)
+tr=knnImputation(z)
+tr=impute.NN_HD(z)
+?impute.NN_HD
